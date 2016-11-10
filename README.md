@@ -4,6 +4,13 @@ An interactive HTTP Client&mdash;written in [Node.js](https://nodejs.org/en/).
 
 This is a small tool I quickly whipped up that allows you to conveniently make HTTP requests. You can only set the request method and message body at the moment but I'll add features as I need them. Feel free to contribute.
 
+### Features
+
+  - Uses readline
+  - Optional Vi mode
+  - Tab completion for request methods and options
+  - Persistent path between sessions
+
 ### Getting started
 
 ```bash
@@ -11,69 +18,88 @@ git clone https://github.com/jasonwoodland/httpc.git
 npm install -g ./httpc
 ```
 
+### Starting
+
+```bash
+# Start from the last path
+httpc
+
+# Start from a relative or absolute path
+httpc http://example.net
+```
+
 ### Usage
 
-##### Change domains
-```
-> //example.net
+##### Synopsis
+
+```bash
+# Change the current path
+PATH
+
+# Perform a request, optionally specify a path or any options
+METHOD [PATH] [OPTIONS]
 ```
 
-##### Change paths
-```
-> some/path
+##### Changing the current path
+
+```bash
+# Change path absolute to the domain name
+/an/absolute/path
+
+# Change relative to the current path
+../some/relative/path
 ```
 
-##### Send a request with one of the HTTP methods
-```
-> GET
-> POST
-> PUT
-> PATCH
-> DELETE
-> HEAD
-> OPTIONS
+##### Changing domains
+
+```bash
+//example.net/
+
+# Change protocols
+https://example.net/
 ```
 
-##### Perform a request on an absolute path
+##### Request methods
+
 ```
-> GET /some/resource
+GET
+POST
+PUT
+PATCH
+DELETE
+OPTIONS
+HEAD
 ```
 
-##### Only print the response body from a request
-```
-> GET /some/resource -b
+##### Request options
+```bash
+-b, --body
+	Only print the response body
+
+-h, --header
+	Only print the response headers
+
+-d BODY, --data BODY
+	Specify a raw request message body
 ```
 
-##### Only print the headers
-```
-> GET -h
-```
+##### Examples
+```bash
+# Simply perform a GET request on the current path
+GET
 
-##### Set the request message body
-```
-> PUT /something -d 'Howdy do'
-```
+# Perform a GET request on a path
+GET /some/resource
 
-### Tips/features
-
-  - Use the up/down arrow keys to browse history
-  - you can enable/disable Vi-mode and the default URI in `lib/node_modules/httpc/httpc`
-
-### Files
-
-You can find out where it's installed using `which httpc`.
-The supporting files are located in relatively in `../lib/node_modules/httpc/`.
-So for example: (if you use MacPorts)
-```
-/opt/local/bin/httpc
-/opt/local/lib/node_modules/httpc
+# Perform a PUT request with a message body
+PUT /some/thing --data 'Howdy do'
 ```
 
 ### To do
 
 Really more of a wish list since I haven't got the time.
 
-  - Remembers last URI from session
+  - Ability to set request headers
   - Persistent cookies between sessions
-  - A better way to send JSON in the request message body.
+  - An easier way to send JSON in the request message body.
   - Config file
