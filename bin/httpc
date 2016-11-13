@@ -156,7 +156,8 @@ rl.on('line', (input) => {
 				case '--query':
 				case '-q':
 					var inputQuery = jason(value);
-					var combinedObject = Object.assign(persistentQuery, inputQuery);
+					var combinedObject = {};
+					Object.assign(combinedObject, persistentQuery, inputQuery);
 					query = '?' + qs.stringify(combinedObject);
 					if(setPersistentQuery) persistentQuery = combinedObject;
 					break;
