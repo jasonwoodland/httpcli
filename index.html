@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>httpc by jasonwoodland</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">httpc</h1>
+      <h2 class="project-tagline">An interactive HTTP Client</h2>
+      <a href="https://github.com/jasonwoodland/httpc" class="btn">View on GitHub</a>
+      <a href="https://github.com/jasonwoodland/httpc/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/jasonwoodland/httpc/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="httpc" class="anchor" href="#httpc" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>httpc</h1>
+
+<p>An interactive HTTP Client—written in <a href="https://nodejs.org/en/">Node.js</a>.</p>
+
+<p>This is a small tool I quickly whipped up that allows you to conveniently make HTTP requests. You can only set the request method and message body at the moment but I'll add features as I need them. Feel free to contribute.</p>
+
+<h3>
+<a id="features" class="anchor" href="#features" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Features</h3>
+
+<ul>
+<li>Uses readline</li>
+<li>Optional Vi mode</li>
+<li>Tab completion for request methods and options</li>
+<li>Persistent path between sessions</li>
+</ul>
+
+<h3>
+<a id="getting-started" class="anchor" href="#getting-started" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting started</h3>
+
+<div class="highlight highlight-source-shell"><pre>git clone https://github.com/jasonwoodland/httpc.git
+npm install -g ./httpc</pre></div>
+
+<h3>
+<a id="starting" class="anchor" href="#starting" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Starting</h3>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Start from the last path</span>
+httpc
+
+<span class="pl-c"># Start from a relative or absolute path</span>
+httpc http://example.net</pre></div>
+
+<h3>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Usage</h3>
+
+<h5>
+<a id="synopsis" class="anchor" href="#synopsis" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Synopsis</h5>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Change the current path</span>
+PATH
+
+<span class="pl-c"># Perform a request, optionally specify a path or any options</span>
+METHOD [PATH] [OPTIONS]</pre></div>
+
+<h5>
+<a id="changing-the-current-path" class="anchor" href="#changing-the-current-path" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Changing the current path</h5>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Change path absolute to the domain name</span>
+/an/absolute/path
+
+<span class="pl-c"># Change relative to the current path</span>
+../some/relative/path</pre></div>
+
+<h5>
+<a id="changing-domains" class="anchor" href="#changing-domains" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Changing domains</h5>
+
+<div class="highlight highlight-source-shell"><pre>//example.net/
+
+<span class="pl-c"># Change protocols</span>
+https://example.net/</pre></div>
+
+<h5>
+<a id="queries-and-request-data" class="anchor" href="#queries-and-request-data" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Queries and request data</h5>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Setting query parameters</span>
+-q version=2 key=<span class="pl-s"><span class="pl-pds">"</span>some value<span class="pl-pds">"</span></span>
+
+<span class="pl-c"># Specifying strings in the request body data</span>
+-d this=that <span class="pl-s"><span class="pl-pds">"</span>some thing<span class="pl-pds">"</span></span>=<span class="pl-s"><span class="pl-pds">"</span>some thing else<span class="pl-pds">"</span></span>
+
+<span class="pl-c"># Specifying an array (you can use commas or spaces to separate data)</span>
+-d numbers=[1, 2, 3] more=[4 5 6]
+
+<span class="pl-c"># Specifying an object </span>
+-d user={name=jason age=20 skills=[apis, <span class="pl-s"><span class="pl-pds">"</span>looking cool<span class="pl-pds">"</span></span>]}</pre></div>
+
+<h5>
+<a id="request-methods" class="anchor" href="#request-methods" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Request methods</h5>
+
+<pre><code>GET
+POST
+PUT
+PATCH
+DELETE
+OPTIONS
+HEAD
+</code></pre>
+
+<h5>
+<a id="request-options" class="anchor" href="#request-options" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Request options</h5>
+
+<div class="highlight highlight-source-shell"><pre>-b, --body
+    Only print the response body.
+
+-h, --header
+    Only print the response headers.
+
+-d DATA, --data DATA
+    Specify request body data to send as a JSON object.
+
+-q QUERY, --query QUERY
+    Specify query parameters.
+
+-D DATA, --persistent-data DATA
+    Specify request body data to send with every following request which
+    specifies the -d flag. Useful <span class="pl-k">for</span> sending session data.
+
+-Q QUERY, --persistent-query QUERY
+    Specify query parameters to send with every following request which
+    specifies the -q flag. Useful <span class="pl-k">for</span> sending session data.
+
+-r, --rm-persistent
+    Remove persistent data and queries sent with requests.</pre></div>
+
+<h5>
+<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Examples</h5>
+
+<div class="highlight highlight-source-shell"><pre><span class="pl-c"># Simply perform a GET request on the current path</span>
+GET
+
+<span class="pl-c"># Perform a GET request on a path</span>
+GET /some/resource
+
+<span class="pl-c"># Perform a PUT request with request data</span>
+PUT /some/thing --data this=<span class="pl-s"><span class="pl-pds">"</span>that<span class="pl-pds">"</span></span> array=[1, 2] object={a=b, c=d}</pre></div>
+
+<h3>
+<a id="to-do" class="anchor" href="#to-do" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>To do</h3>
+
+<ul>
+<li>[ ] Ability to set request headers</li>
+<li>[ ] Persistent data and queries between sessions</li>
+<li>[ ] Persistent cookies between sessions</li>
+<li>[ ] Persistent history</li>
+<li>[x] An easier way to send JSON in the request message body.</li>
+<li>[ ] Config file</li>
+</ul>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/jasonwoodland/httpc">httpc</a> is maintained by <a href="https://github.com/jasonwoodland">jasonwoodland</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
