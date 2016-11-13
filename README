@@ -133,4 +133,6 @@ PUT /some/thing --data this="that" array=[1, 2] object={a=b, c=d}
   - [ ] Persistent cookies between sessions
   - [ ] Persistent history
   - [x] An easier way to send JSON in the request message body.
+  - [ ] Ability to read persistent data/queries and cookies
+  - [ ] Delete cookies
   - [ ] Config file
