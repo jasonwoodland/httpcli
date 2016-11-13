@@ -134,13 +134,15 @@ rl.on('line', (input) => {
 				case '-r':
 					persistentData = {};
 					persistentQuery = {};
+					break;
 				case '--persistent-data':
 				case '-D':
 					setPersistentData = true;
 				case '--data':
 				case '-d':
 					var inputData = jason(value);
-					var combinedObject = Object.assign(persistentData, inputData);
+					var combinedObject = {};
+					Object.assign(combinedObject, persistentData, inputData);
 					data = JSON.stringify(combinedObject);
 					if(setPersistentData) persistentData = combinedObject;
 					break;
@@ -174,9 +176,9 @@ rl.on('line', (input) => {
 
 		// Set the URI if the first parameter (after the request method) is not an option
 		if(args[0][0] != '-') {
-			requestURI = url.resolve(uri, args[0]);
+			requestURI = url.resolve(uri + (uri[uri.length - 1] == '/' ? '' : '/'), args[0]);
 			if(!requestMethod) {
-				uri = requestURI;
+				uri = url.format(requestURI.substring(0, requestURI[requestURI.length - 1] == '/' ? requestURI.length - 1 : requestURI.length));
 			}
 		}
 	}
