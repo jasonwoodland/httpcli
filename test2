@@ -1,0 +1,27 @@
+var jsonic = require('jsonic');
+a = 'x=[1, "hello \\"don\'t [1,2,3] {a=b y=a}there", \'this\\\' "that" then\', {a=b, y=h}] y=z \'some word\'=[1,2,[1,2,[1,2,3]]]'
+
+console.log(a);
+o='{'; 
+sq=false; 
+dq=false; 
+si=0; 
+ci=0; 
+a.split('').forEach(function(x,y){ 
+	c = x=='=' && !sq && !dq ? ':' : x; 
+	if(!sq && !dq && x == ' ' && a[y-1] != ',') {
+		c=',';
+	}
+	if(x=='"' && a[y-1] != '\\' && !sq) dq = !dq;  
+	if(x=="'" && a[y-1] != '\\' && !dq) {
+		sq = !sq;  
+		c = '"';
+	}
+	if(sq && x=='\\' && a[y+1]=="'") c = '';
+	if(sq && x=='"') o+= '\\';
+	o+=c; 
+}); 
+o+='}';
+console.log(o);
+//console.log(JSON.stringify(jsonic(o), null, 4));
+console.log(jsonic(o).x[2]);

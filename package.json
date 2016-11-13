@@ -8,8 +8,10 @@
   "dependencies": {
     "chalk": "^1.1.3",
     "jsome": "^2.3.25",
+    "jsonic": "^0.2.2",
     "keypress": "^0.2.1",
     "node-persist": "^2.0.7",
+    "qs": "^6.3.0",
     "readline": "^1.3.0",
     "readline-vim": "^0.3.2",
     "request": "git+https://github.com/jasonwoodland/request.git",

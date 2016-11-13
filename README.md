@@ -59,6 +59,22 @@ METHOD [PATH] [OPTIONS]
 https://example.net/
 ```
 
+##### Queries and request data
+
+```bash
+# Setting query parameters
+-q version=2 key="some value"
+
+# Specifying strings in the request body data
+-d this=that "some thing"="some thing else"
+
+# Specifying an array (you can use commas or spaces to separate data)
+-d numbers=[1, 2, 3] more=[4 5 6]
+
+# Specifying an object 
+-d user={name=jason age=20 skills=[apis, "looking cool"]}
+```
+
 ##### Request methods
 
 ```
@@ -72,15 +88,30 @@ HEAD
 ```
 
 ##### Request options
+
 ```bash
 -b, --body
-	Only print the response body
+	Only print the response body.
 
 -h, --header
-	Only print the response headers
+	Only print the response headers.
 
--d BODY, --data BODY
-	Specify a raw request message body
+-d DATA, --data DATA
+	Specify request body data to send as a JSON object.
+
+-q QUERY, --query QUERY
+	Specify query parameters.
+
+-D DATA, --persistent-data DATA
+	Specify request body data to send with every following request which
+	specifies the -d flag. Useful for sending session data.
+
+-Q QUERY, --persistent-query QUERY
+	Specify query parameters to send with every following request which
+	specifies the -q flag. Useful for sending session data.
+
+-r, --rm-persistent
+	Remove persistent data and queries sent with requests.
 ```
 
 ##### Examples
@@ -91,15 +122,15 @@ GET
 # Perform a GET request on a path
 GET /some/resource
 
-# Perform a PUT request with a message body
-PUT /some/thing --data 'Howdy do'
+# Perform a PUT request with request data
+PUT /some/thing --data this="that" array=[1, 2] object={a=b, c=d}
 ```
 
 ### To do
 
-Really more of a wish list since I haven't got the time.
-
-  - Ability to set request headers
-  - Persistent cookies between sessions
-  - An easier way to send JSON in the request message body.
-  - Config file
+  - [ ] Ability to set request headers
+  - [ ] Persistent data and queries between sessions
+  - [ ] Persistent cookies between sessions
+  - [ ] Persistent history
+  - [x] An easier way to send JSON in the request message body.
+  - [ ] Config file

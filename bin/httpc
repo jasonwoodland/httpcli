@@ -10,22 +10,23 @@
 require('request');
 
 const chalk = require('chalk');
+const jsome = require('jsome');
+const jsonic = require('jsonic');
 const keypress = require('keypress');
+const storage = require('node-persist');
+const qs = require('qs');
 const readline = require('readline');
 const rlv = require('readline-vim');
-const jsome = require('jsome');
 const parse = require('shell-quote').parse;
-const request = require('syncrequest');
 const url = require('url');
+const request = require('syncrequest');
 
 // Init persistent data
-var storage = require('node-persist');
 storage.initSync();
 
 // Configuration
 const useVi = true;
 const defaultURI = 'http://localhost/';
-
 
 jsome.colors = {
 	num: 'cyan',
@@ -52,6 +53,7 @@ if(useVi) rlv(rl);
 
 var version = '0.1.0';
 var method = 'GET';
+
 var methods = [
 	'GET',
 	'PUT',
@@ -59,6 +61,12 @@ var methods = [
 	'PATCH',
 	'DELETE',
 	'HEAD'
+];
+
+var jsonContentTypes = [
+	'application/json',
+	'application/javascript',
+	'text/json'
 ];
 
 var uri = () => {
@@ -75,6 +83,8 @@ var uri = () => {
 }();
 
 var jar = request.jar();
+var persistentData = {};
+var persistentQuery = {};
 
 setPrompt();
 rl.prompt();
@@ -82,10 +92,12 @@ rl.prompt();
 rl.on('line', (input) => {
 	rl.pause();
 
-	var args = parse(input);
+	var args = input.split(' '); //parse(input);
 	var headerOnly = false;
 	var bodyOnly = false;
-	var body = '';
+	var data = '';
+	var form = {};
+	var query = '';
 	var contentType = 'application/json';
 	var requestMethod;
 	var requestURI = uri;
@@ -103,13 +115,48 @@ rl.on('line', (input) => {
 
 		// Handle options
 		var index = 0; // index of the value, not the name
+		var setPersistentData = false;
+		var setPersistentQuery = false;
 
 		args.forEach((arg) => {
 			index++;
+
+			// parse argument value
+			var pieces = [];
+			for(var subIndex = index; subIndex < args.length; subIndex++) {
+				if(args[subIndex].indexOf('-') == 0) break;
+				pieces.push(args[subIndex]);
+			}
+			var value = pieces.join(' ');
+
 			switch(arg) {
+				case '-rm-persistent':
+				case '-r':
+					persistentData = {};
+					persistentQuery = {};
+				case '--persistent-data':
+				case '-D':
+					setPersistentData = true;
 				case '--data':
 				case '-d':
-					body = args[index];
+					var inputData = jason(value);
+					var combinedObject = Object.assign(persistentData, inputData);
+					data = JSON.stringify(combinedObject);
+					if(setPersistentData) persistentData = combinedObject;
+					break;
+				case '--form':
+				case '-f':
+					form = JSON.parse(args[index]);
+					break;
+				case '--persistent-query':
+				case '-Q':
+					setPersistentQuery = true;
+				case '--query':
+				case '-q':
+					var inputQuery = jason(value);
+					var combinedObject = Object.assign(persistentQuery, inputQuery);
+					query = '?' + qs.stringify(combinedObject);
+					if(setPersistentQuery) persistentQuery = combinedObject;
 					break;
 				case '--body':
 				case '-b':
@@ -140,13 +187,13 @@ rl.on('line', (input) => {
 		// Sync request
 		response = request.sync({
 			method: requestMethod,
-			uri: requestURI,
+			uri: requestURI + query,
 			jar: jar,
 			headers: {
 				'Content-Type': contentType,
 				'Cookie': jar.getCookieString(requestURI)
 			},
-			body: body
+			body: data
 		});
 
 		if(!response.error) {
@@ -202,7 +249,7 @@ rl.on('line', (input) => {
 				// Format as JSON if the response Content-Type is application/jason
 				var body = response.body.replace(/^\s+|\s+$/g, '');
 
-				if(headers['content-type'].split(';')[0] == 'application/json') {
+				if(jsonContentTypes.indexOf(headers['content-type'].split(';')[0]) !== false) {
 					formatJSON(body);
 				} else {
 					console.log(body);
@@ -239,9 +286,10 @@ function completer(line) {
 	var arg = line.split(' ').pop();
 
 	var completions = methods.concat(methods.join('|').toLowerCase().split('|'), [
-		'--header', '-h',
 		'--body', '-b',
-		'--data', '-d'
+		'--header', '-h',
+		'--data', '-d',
+		'--form', '-f'
 	]);
 
 	var hits = completions.filter((c) => {
@@ -251,4 +299,34 @@ function completer(line) {
 	});
 
 	return [hits && hits.length ? hits : completions, arg];
+}
+
+
+function jason(input) {
+	var output = '{';
+	var singleQuotes = false 
+	var doubleQuotes = false;
+
+	input.split('').forEach(function(char, pos){ 
+		char = char == '=' && !singleQuotes && !doubleQuotes ? ':' : char; // replace = with :
+
+		// add commas
+		if(!singleQuotes && !doubleQuotes && char == ' ' && input[pos - 1] != ',') {
+			if(output[output.length - 1] != ',') char = ',';
+		}
+
+		// handle single/double quotes escaping
+		if(singleQuotes && char == '\\' && input[pos + 1] == "'") char = '';
+		if(singleQuotes && char == '"') output += '\\';
+
+		if(char == '"' && input[pos - 1] != '\\' && !singleQuotes) doubleQuotes = !doubleQuotes;
+		if(char == "'" && input[pos - 1] != '\\' && !doubleQuotes) {
+			singleQuotes = !singleQuotes;
+			char = '"';
+		}
+
+		output += char;
+	});
+
+	return jsonic(output + '}');
 }
