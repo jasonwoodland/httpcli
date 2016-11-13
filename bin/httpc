@@ -51,7 +51,7 @@ const rl = readline.createInterface({
 // Use Vi if enabled
 if(useVi) rlv(rl);
 
-var version = '0.1.0';
+var version = '0.1.2';
 var method = 'GET';
 
 var methods = [
