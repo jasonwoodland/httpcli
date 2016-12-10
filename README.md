@@ -1,31 +1,31 @@
-# httpc
+# httpcli
 
 An interactive HTTP Client&mdash;written in [Node.js](https://nodejs.org/en/).
 
-This is a small tool I quickly whipped up that allows you to conveniently make HTTP requests. You can only set the request method and message body at the moment but I'll add features as I need them. Feel free to contribute.
+This is a small tool I wrote that allows you to conveniently make HTTP requests. You can only set the request method and message body at the moment but I'll add features as I need them. Feel free to contribute.
 
 ### Features
 
   - Uses readline
   - Optional Vi mode
-  - Tab completion for request methods and options
+  - Tab completion
   - Persistent path between sessions
 
 ### Getting started
 
 ```bash
-git clone https://github.com/jasonwoodland/httpc.git
-npm install -g ./httpc
+git clone https://github.com/jasonwoodland/httpcli.git
+npm install -g ./httpcli
 ```
 
 ### Starting
 
 ```bash
 # Start from the last path
-httpc
+httpcli
 
 # Start from a relative or absolute path
-httpc http://example.net
+httpcli http://example.net
 ```
 
 ### Usage
@@ -33,11 +33,14 @@ httpc http://example.net
 ##### Synopsis
 
 ```bash
-# Change the current path
-PATH
+# Change the working URI by specifying either a relative or absolute URI
+URI
 
-# Perform a request, optionally specify a path or any options
-METHOD [PATH] [OPTIONS]
+# Perform a request, optionally specify a relative or absolute URI or any options for that request
+METHOD [URI] [OPTIONS]
+
+# Set persistent options
+OPTIONS
 ```
 
 ##### Changing the current path
@@ -50,13 +53,14 @@ METHOD [PATH] [OPTIONS]
 ../some/relative/path
 ```
 
-##### Changing domains
+##### Changing hosts
 
 ```bash
-//example.net/
-
-# Change protocols
+# Change hosts with a different scheme
 https://example.net/
+
+# Change hosts with the same scheme
+//example.net/
 ```
 
 ##### Queries and request data
@@ -123,7 +127,7 @@ GET
 GET /some/resource
 
 # Perform a PUT request with request data
-PUT /some/thing --data this="that" array=[1, 2] object={a=b, c=d}
+PUT /some/thing --data this="that" array=[1, 2, 3] object={a=b, c=d}
 ```
 
 ### To do
