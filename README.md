@@ -1,27 +1,26 @@
 # httpcli
+![httpcli](https://raw.githubusercontent.com/jasonwoodland/httpcli/master/httpcli.png)
+Test and develop REST APIs&mdash;an interactive HTTP client.
 
-An interactive HTTP Client&mdash;written in [Node.js](https://nodejs.org/en/).
-
-This is a small tool I wrote that allows you to conveniently make HTTP requests. You can only set the request method and message body at the moment but I'll add features as I need them. Feel free to contribute.
+This is a small tool that allows you to conveniently make HTTP requests. You can only set the request method and message body at the moment but I'll add features as I need them. Feel free to create a pull request.
 
 ### Features
 
-  - Uses readline
-  - Optional Vi mode
+  - Readline bindings
+  - Optional vi-mode
   - Tab completion
-  - Persistent path between sessions
+  - Persistent sessions
 
 ### Getting started
 
 ```bash
-git clone https://github.com/jasonwoodland/httpcli.git
-npm install -g ./httpcli
+git clone https://github.com/jasonwoodland/httpcli.git && npm install -g ./httpcli
 ```
 
 ### Starting
 
 ```bash
-# Start from the last path
+# Start from the previous session's path
 httpcli
 
 # Start from a relative or absolute path
@@ -64,18 +63,19 @@ https://example.net/
 ```
 
 ##### Queries and request data
+httpcli provides a flexible way of passing data as the JSON request body as well as the query parameters.
 
 ```bash
 # Setting query parameters
 -q version=2 key="some value"
 
-# Specifying strings in the request body data
--d this=that "some thing"="some thing else"
+# Specifying strings in the JSON request body
+-d key=value "another key"="another value"
 
 # Specifying an array (you can use commas or spaces to separate data)
--d numbers=[1, 2, 3] more=[4 5 6]
+-d firstArray=[1, 2, 3] secondArray=[4 5 6]
 
-# Specifying an object 
+# Specifying an object
 -d user={name=jason age=20 skills=[apis, "looking cool"]}
 ```
 
@@ -100,17 +100,17 @@ HEAD
 -h, --header
 	Only print the response headers.
 
--d DATA, --data DATA
+-d [DATA]..., --data [DATA]...
 	Specify request body data to send as a JSON object.
 
--q QUERY, --query QUERY
+-q [QUERY]..., --query [QUERY]...
 	Specify query parameters.
 
--D DATA, --persistent-data DATA
+-D [DATA]..., --persistent-data [DATA]...
 	Specify request body data to send with every following request which
 	specifies the -d flag. Useful for sending session data.
 
--Q QUERY, --persistent-query QUERY
+-Q [QUERY]..., --persistent-query [QUERY]...
 	Specify query parameters to send with every following request which
 	specifies the -q flag. Useful for sending session data.
 
@@ -120,23 +120,27 @@ HEAD
 
 ##### Examples
 ```bash
-# Simply perform a GET request on the current path
+# Perform a GET request on the current path/resource
 GET
 
-# Perform a GET request on a path
-GET /some/resource
+# Perform a GET request on a resource relative to the current path
+GET some/resource
+
+# Perform a GET request on a resource relative to the current host
 
 # Perform a PUT request with request data
-PUT /some/thing --data this="that" array=[1, 2, 3] object={a=b, c=d}
+PUT some/resource --data name="value" array=[1, 2, 3] object={a=b, x=y}
 ```
 
 ### To do
+Let me know if you would like to see any of these features implemented (or any you can think of).
 
   - [ ] Ability to set request headers
   - [ ] Persistent data and queries between sessions
   - [ ] Persistent cookies between sessions
   - [ ] Persistent history
-  - [x] An easier way to send JSON in the request message body.
+  - [x] An easier way to send JSON in the request message body. (-d flag)
   - [ ] Ability to read persistent data/queries and cookies
-  - [ ] Delete cookies
+  - [ ] Ability to delete cookies
+  - [ ] Ability to send a raw request body
   - [ ] Config file
