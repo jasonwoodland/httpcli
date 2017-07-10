@@ -239,7 +239,7 @@ rl.on('line', (input) => {
 						chalk.blue(prettyName) +
 						chalk.white(': ') +
 						' '.repeat(longest - prettyName.length) + // Align values
-						chalk.yellow(headers[field])
+						chalk.green(headers[field])
 					)
 				}
 
@@ -252,7 +252,7 @@ rl.on('line', (input) => {
 				// Format as JSON if the response Content-Type is application/jason
 				var body = response.body.replace(/^\s+|\s+$/g, '')
 
-				if(jsonContentTypes.indexOf(headers['content-type'].split('')[0]) !== false) {
+				if(headers['content-type'] && jsonContentTypes.includes(headers['content-type'].split(';')[0])) {
 					formatJSON(body)
 				} else {
 					console.log(body)
