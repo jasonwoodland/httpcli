@@ -1,335 +1,489 @@
 #!/usr/bin/env node
 
-/**
- * httpcli - An interactive HTTP Client
- * @version 0.1.0
- * @author Jason Woodland
- */
-
-// Dependencies
-require('request')
-
 const chalk = require('chalk')
 const jsome = require('jsome')
 const jsonic = require('jsonic')
-const keypress = require('keypress')
-const storage = require('node-persist')
+const os = require('os')
 const qs = require('qs')
 const readline = require('readline')
 const rlv = require('readline-vim')
-const parse = require('shell-quote').parse
-const url = require('url')
 const request = require('syncrequest')
+const storage = require('node-persist')
+const sync = require('sync')
+const url = require('url')
+const util = require('util')
 
 // Init persistent data
-storage.initSync()
+storage.initSync({
+  dir: os.homedir() + '/.httpcli'
+})
 
 // Configuration
 const useVi = true
 const defaultURI = 'http://localhost/'
 
 jsome.colors = {
-	num: 'cyan',
-	str: 'green',
-	bool: 'cyan',
-	regex: 'cyan',
-	undef: 'grey',
-	null: 'grey',
-	attr: 'blue',
-	quot: 'green',
-	punc: 'white',
-	brack: 'white'
+  num: 'cyan',
+  str: 'green',
+  bool: 'cyan',
+  regex: 'cyan',
+  undef: 'grey',
+  null: 'grey',
+  attr: 'cyan',
+  quot: 'green',
+  punc: 'white',
+  brack: 'white'
 }
 
 // Create the readline interface
 const rl = readline.createInterface({
-	input: process.stdin,
-	output: process.stdout,
-	completer: completer
+  input: process.stdin,
+  output: process.stdout,
+  completer: completer
 })
 
 // Use Vi if enabled
-if(useVi) rlv(rl)
+if (useVi) {
+  rlv(rl)
+}
 
-var version = '0.1.2'
-var method = 'GET'
-
-var methods = [
-	'GET',
-	'PUT',
-	'POST',
-	'PATCH',
-	'DELETE',
-	'HEAD'
+const methods = [
+  'GET',
+  'PUT',
+  'POST',
+  'PATCH',
+  'DELETE',
+  'HEAD'
 ]
 
-var jsonContentTypes = [
-	'application/json',
-	'application/javascript',
-	'text/json'
+const jsonContentTypes = [
+  'application/json',
+  'application/javascript',
+  'application/x-json',
+  'application/x-javascript',
+  'text/json',
+  'text/javascript',
+  'text/x-json',
+  'text/x-javascript',
+  'application/ld+json'
 ]
 
-var uri = (() => {
-	var argument = process.argv[process.execArgv.length + 2]
-	var storedURI = storage.getItemSync('uri')
+let uri = (() => {
+  const argument = process.argv[process.execArgv.length + 2]
+  const storedURI = storage.getItemSync('uri')
 
-	if(argument) {
-		return url.resolve(defaultURI, argument || '')
-	} else if(storedURI) {
-		return storedURI
-	} else {
-		return defaultURI
-	}
+  if (argument) {
+    return url.resolve(defaultURI, argument || '')
+  } else if (storedURI) {
+    return storedURI
+  } else {
+    return defaultURI
+  }
 })()
 
-var jar = request.jar()
-var persistentData = {}
-var persistentQuery = {}
+const jar = request.jar()
+let persistentCookies = {}
+let persistentData = {}
+let persistentQuery = {}
+let persistentHeaders = {}
+let alwaysPrintRequest = false
 
 setPrompt()
-rl.prompt()
 
+/*
+ * Main loop, handle user input
+ */
 rl.on('line', (input) => {
-	rl.pause()
+  rl.pause()
 
-	var args = input.split(' ') //parse(input)
-	var headerOnly = false
-	var bodyOnly = false
-	var data = ''
-	var form = {}
-	var query = ''
-	var contentType = 'application/json'
-	var requestMethod
-	var requestURI = uri
+  let args = input.split(' ') // parse(input)
+  let headerOnly = false
+  let bodyOnly = false
+  let data = ''
+  let headers = {}
+  let query = ''
+  let contentType = 'application/json'
+  let requestMethod
+  let requestURI = uri
+  let printRequest = alwaysPrintRequest
+  let requestCookies = []
 
-	// Check if the first argument is a request method
-	if(args[0]) {
-		if(methods.indexOf(args[0].toUpperCase()) != -1) {
-			requestMethod = args[0].toUpperCase()
-			args = args.slice(1)
-		}
-	}
+  // Check if the first argument is a request method
+  if (args[0]) {
+    if (methods.indexOf(args[0].toUpperCase()) != -1) {
+      requestMethod = args[0].toUpperCase()
+      args = args.slice(1)
+    }
+  }
 
-	// Determine there is a URI or options to handle
-	if(args[0]) {
+  // Determine there is a URI or options to handle
+  if (args[0]) {
 
-		// Handle options
-		var index = 0 // index of the value, not the name
-		var setPersistentData = false
-		var setPersistentQuery = false
+    // Handle options
+    let index = 0 // index of the value, not the name
+    let setPersistentCookies = false
+    let setPersistentData = false
+    let setPersistentQuery = false
+    let setPersistentHeaders = false
 
-		args.forEach((arg) => {
-			index++
+    args.forEach((arg) => {
+      index++
 
-			// parse argument value
-			var pieces = []
-			for(var subIndex = index; subIndex < args.length; subIndex++) {
-				if(args[subIndex].indexOf('-') == 0) break
-				pieces.push(args[subIndex])
-			}
-			var value = pieces.join(' ')
+      // parse argument value
+      const pieces = []
+      for (let subIndex = index; subIndex < args.length; subIndex++) {
+        if (args[subIndex].indexOf('-') == 0) {
+          break
+        }
+        pieces.push(args[subIndex])
+      }
+      const value = pieces.join(' ')
 
-			switch(arg) {
-				case '-rm-persistent':
-				case '-r':
-					persistentData = {}
-					persistentQuery = {}
-					break
-				case '--persistent-data':
-				case '-D':
-					setPersistentData = true
-				case '--data':
-				case '-d':
-					var inputData = jason(value)
-					var combinedObject = {}
-					Object.assign(combinedObject, persistentData, inputData)
-					data = JSON.stringify(combinedObject)
-					if(setPersistentData) persistentData = combinedObject
-					break
-				case '--form':
-				case '-f':
-					form = JSON.parse(args[index])
-					break
-				case '--persistent-query':
-				case '-Q':
-					setPersistentQuery = true
-				case '--query':
-				case '-q':
-					var inputQuery = jason(value)
-					var combinedObject = {}
-					Object.assign(combinedObject, persistentQuery, inputQuery)
-					query = '?' + qs.stringify(combinedObject)
-					if(setPersistentQuery) persistentQuery = combinedObject
-					break
-				case '--body':
-				case '-b':
-					bodyOnly = true
-					break
-				case '--header':
-				case '-h':
-					headerOnly = true
-					break
-				case '--content-type':
-				case '-t':
-					contentType = args[index]
-			}
-		})
+      const combinedObject = {}
 
-		// Set the URI if the first parameter (after the request method) is not an option
-		if(args[0][0] != '-') {
-			requestURI = url.resolve(uri + (uri[uri.length - 1] == '/' ? '' : '/'), args[0])
-			if(!requestMethod) {
-				uri = url.format(requestURI.substring(0, requestURI[requestURI.length - 1] == '/' ? requestURI.length - 1 : requestURI.length))
-			}
-		}
-	}
+      switch (arg) {
+        case '--rm-stored':
+        case '-r':
+          persistentCookies = {}
+          persistentData = {}
+          persistentQuery = {}
+          persistentHeaders = {}
+          alwaysPrintRequest = false
+          break
 
-	// Execute a request
-	if(requestMethod) {
+        case '--store-cookie':
+        case '-C':
+          setPersistentCookies = true
 
-		// Sync request
-		response = request.sync({
-			method: requestMethod,
-			uri: requestURI + query,
-			jar: jar,
-			headers: {
-				'Content-Type': contentType,
-				'Cookie': jar.getCookieString(requestURI)
-			},
-			body: data
-		})
+        case '-c':
+        case '-cookie':
+          requestCookies = jason(value)
 
-		if(!response.error) {
+          if (setPersistentCookies) {
+            persistentCookies = requestCookies
+          }
 
-			// Store cookies in the jar
-			if(response.response.headers['set-cookie'])
-			response.response.headers['set-cookie'].forEach((cookie) => {
-				jar.setCookie(request.cookie(cookie), uri)
-			})
+          break
 
-			// Output response headers
-			var headers = response.response.headers
-			var longest = Object.keys(headers).sort((a, b) => { return b.length - a.length })[0].length
+        case '--store-data':
+        case '-D':
+          setPersistentData = true
 
-			if(!bodyOnly || headerOnly) {
+        case '--data':
+        case '-d':
+          const inputData = jason(value)
+          Object.assign(combinedObject, persistentData, inputData)
+          data = JSON.stringify(combinedObject)
 
-				// Output status line
-				var success = String(response.response.statusCode)[0] == '2'
+          if (setPersistentData) {
+            persistentData = combinedObject
+          }
 
-				console.log(
-					chalk.blue('HTTP') + chalk.white('/') + chalk.blue(response.response.httpVersion) + ' ' +
-					(success ? chalk.green : chalk.red)(
-						response.response.statusCode + ' ' +
-						response.response.statusMessage
-					)
-				)
+          break
 
-				for(var field in headers) {
-					var words = field.split('-')
-					var newWords = []
+        case '--store-query':
+        case '-Q':
+          setPersistentQuery = true
 
-					// Capitalize field names
-					words.forEach((word) => {
-						newWords.push(word[0].toUpperCase() + word.substr(1))
-					})
+        case '--query':
+        case '-q':
+          const inputQuery = jason(value)
+          Object.assign(combinedObject, persistentQuery, inputQuery)
+          query = '?' + qs.stringify(combinedObject)
 
-					prettyName = newWords.join('-')
+          if (setPersistentQuery) {
+            persistentQuery = combinedObject
+          }
 
-					console.log(
-						chalk.blue(prettyName) +
-						chalk.white(': ') +
-						' '.repeat(longest - prettyName.length) + // Align values
-						chalk.green(headers[field])
-					)
-				}
+          break
 
-				console.log() // Newline after headers
-			}
+        case '--store-header':
+        case '-H':
+          setPersistentHeaders = true
 
-			// Output response body
-			if((bodyOnly || !headerOnly) && response.body) {
+        case '--header':
+        case '-h':
+          const inputHeaders = jason(value)
+          Object.assign(headers, persistentHeaders, inputHeaders)
 
-				// Format as JSON if the response Content-Type is application/jason
-				var body = response.body.replace(/^\s+|\s+$/g, '')
+          if (setPersistentHeaders) {
+            persistentHeaders = headers
+          }
 
-				if(headers['content-type'] && jsonContentTypes.includes(headers['content-type'].split(';')[0])) {
-					formatJSON(body)
-				} else {
-					console.log(body)
-				}
+          break
 
-				console.log() // Newline after body
-			}
-		}
-	}
+        case '--body-only':
+          bodyOnly = true
+          break
 
-	setPrompt()
-	rl.prompt()
+        case '--header-only':
+          headerOnly = true
+          break
+
+        case '--always-print-request':
+        case '-P':
+          alwaysPrintRequest = true
+
+        case '--print-request':
+        case '-p':
+          printRequest = true
+          break
+      }
+    })
+
+    // Set the URI if the first parameter (after the request method) is not an option
+    if (args[0][0] != '-') {
+      requestURI = url.resolve(uri + (uri[uri.length - 1] == '/' ? '' : '/'), args[0])
+      if (!requestMethod) {
+        uri = url.format(requestURI.substring(0, requestURI[requestURI.length - 1] == '/' ? requestURI.length - 1 : requestURI.length))
+      }
+    }
+  }
+
+  // Execute a request
+  if (requestMethod) {
+
+    const requestHeaders = Object.assign({
+      'Content-Type': contentType,
+      'Cookie': jar.getCookieString(requestURI)
+    }, headers)
+
+    if (persistentCookies) {
+      Object.assign(requestCookies, persistentCookies)
+    }
+
+    if (requestCookies) {
+      const requestCookieString = Object.keys(requestCookies)
+                                  .map(key => key + '=' + requestCookies[key])
+                                  .join('; ')
+
+      if (requestHeaders.Cookie) {
+        requestHeaders.Cookie += '; '
+        requestHeaders.Cookie += requestCookieString
+      } else {
+        requestHeaders.Cookie = requestCookieString
+      }
+    }
+
+    if (printRequest) {
+      console.log(
+        chalk.cyan(requestMethod) + ' ' + chalk.green(requestURI + query)
+      )
+
+      const longest = Object.keys(requestHeaders).sort((a, b) => { return b.length - a.length })[0].length
+
+      for (field in requestHeaders) {
+        const words = field.split('-')
+        const newWords = []
+
+        // Capitalize field names
+        words.forEach((word) => {
+          newWords.push(word[0].toUpperCase() + word.substr(1))
+        })
+
+        const prettyName = newWords.join('-')
+
+        console.log(
+          chalk.cyan(prettyName) +
+          chalk.white(': ') +
+          ' '.repeat(longest - prettyName.length) + // Align values
+          chalk.green(requestHeaders[field])
+        )
+      }
+
+      console.log()
+    }
+
+    // Sync request
+    const response = request.sync({
+      method: requestMethod,
+      uri: requestURI + query,
+      jar: jar,
+      headers: requestHeaders,
+      body: data
+    })
+
+    if (!response.error) {
+
+      // Store cookies in the jar
+      if (response.response.headers['set-cookie']) {
+        response.response.headers['set-cookie'].forEach((cookie) => {
+          jar.setCookie(request.cookie(cookie), uri)
+        })
+      }
+
+      // Output response headers
+      const headers = response.response.headers
+      const longest = Object.keys(headers).sort((a, b) => { return b.length - a.length })[0].length
+
+      if (!bodyOnly || headerOnly) {
+
+        // Output status line
+        const success = String(response.response.statusCode)[0] == '2'
+
+        console.log(chalk.cyan('HTTP')
+                    + chalk.white('/')
+                    + chalk.cyan(response.response.httpVersion)
+                    + ' '
+                    + (success ? chalk.green : chalk.red)(
+                        response.response.statusCode + ' ' +
+                        response.response.statusMessage))
+
+        for (const field in headers) {
+          const words = field.split('-')
+          const newWords = []
+
+          // Capitalize field names
+          words.forEach((word) => {
+            newWords.push(word[0].toUpperCase() + word.substr(1))
+          })
+
+          const prettyName = newWords.join('-')
+
+          console.log(
+            chalk.cyan(prettyName) +
+            chalk.white(': ') +
+            ' '.repeat(longest - prettyName.length) + // Align values
+            chalk.green(headers[field])
+          )
+        }
+
+        console.log() // Newline after headers
+      }
+
+      // Output response body
+      if ((bodyOnly || !headerOnly) && response.body) {
+
+        // Format as JSON if the response Content-Type is application/jason
+        const body = response.body.replace(/^\s+|\s+$/g, '')
+
+        if (headers['content-type']
+                && jsonContentTypes
+                   .includes(headers['content-type']
+                             .split(';')[0])) {
+          formatJSON(body)
+        } else {
+          console.log(body)
+        }
+
+        console.log() // Newline after body
+      }
+    }
+  }
+
+  setPrompt()
 })
 
+/*
+ * Save information and exit
+ */
 rl.on('SIGINT', () => {
-	console.log()
-	storage.setItemSync('uri', uri)
-	process.exit()
+  console.log() // Print newline before exiting
+  storage.setItemSync('uri', uri)
+  process.exit()
 })
 
+/*
+ * Sets the readline prompt
+ */
 function setPrompt() {
-	rl.setPrompt(
-		chalk.white(uri) + ' '
-	)
+  rl.setPrompt(
+    chalk.white(uri) + ' '
+  )
 
-	rl.prompt()
+  rl.prompt()
 }
 
+/*
+ * Prints a formatted JSON object
+ */
 function formatJSON(input) {
-	jsome.parse(input)
+  jsome.parse(input)
 }
 
+/*
+ * Completion function for the readline interface
+ */
 function completer(line) {
-	var arg = line.split(' ').pop()
+  const arg = line.split(' ').pop()
 
-	var completions = methods.concat(methods.join('|').toLowerCase().split('|'), [
-		'--body', '-b',
-		'--header', '-h',
-		'--data', '-d',
-		'--form', '-f'
-	])
+  let completions
 
-	var hits = completions.filter((c) => {
-		if (c.indexOf(arg) == 0) {
-			return c
-		}
-	})
+  if (arg == line) {
+    if (!line) {
+      completions = methods
+    } else {
+      completions = methods.concat(methods.join('|').toLowerCase().split('|'))
+    }
+  } else {
+    completions = [
+      '--cookie', '-c',
+      '--data', '-d',
+      '--header', '-h',
+      '--query', '-q',
+      '--store-cookie', '-C',
+      '--store-data', '-D',
+      '--store-header', '-H',
+      '--store-query', '-Q',
+      '--body-only',
+      '--header-only',
+      '--print-request', '-p',
+      '--always-print-request', '-P',
+      '--rm-persistent', '-r',
+    ]
+  }
 
-	return [hits && hits.length ? hits : completions, arg]
+  const hits = completions.filter((c) => {
+    if (c.indexOf(arg) == 0) {
+      return c
+    }
+  })
+
+  if (hits.length == 1 && arg == hits[0]) {
+    return []
+  }
+
+  return [hits, arg]
 }
 
-
+/*
+ * Converts a loosely formatted input string into a JSON object.
+ */
 function jason(input) {
-	var output = '{'
-	var singleQuotes = false 
-	var doubleQuotes = false
+  let output = '{'
+  let singleQuotes = false
+  let doubleQuotes = false
 
-	input.split('').forEach(function(char, pos){ 
-		char = char == '=' && !singleQuotes && !doubleQuotes ? ':' : char // replace = with :
+  input.split('').forEach((char, pos) => {
+    char = char == '=' && !singleQuotes && !doubleQuotes ? ':' : char // replace = with :
 
-		// add commas
-		if(!singleQuotes && !doubleQuotes && char == ' ' && input[pos - 1] != ',') {
-			if(output[output.length - 1] != ',') char = ','
-		}
+    // add commas
+    if (!singleQuotes && !doubleQuotes && char == ' ' && input[pos - 1] != ',') {
+      if (output[output.length - 1] != ',') {
+        char = ','
+      }
+    }
 
-		// handle single/double quotes escaping
-		if(singleQuotes && char == '\\' && input[pos + 1] == "'") char = ''
-		if(singleQuotes && char == '"') output += '\\'
+    // handle single/double quotes escaping
+    if (singleQuotes && char == '\\' && input[pos + 1] == "'") {
+      char = ''
+    }
 
-		if(char == '"' && input[pos - 1] != '\\' && !singleQuotes) doubleQuotes = !doubleQuotes
-		if(char == "'" && input[pos - 1] != '\\' && !doubleQuotes) {
-			singleQuotes = !singleQuotes
-			char = '"'
-		}
+    if (singleQuotes && char == '"') {
+      output += '\\'
+    }
 
-		output += char
-	})
+    if (char == '"' && input[pos - 1] != '\\' && !singleQuotes) {
+      doubleQuotes = !doubleQuotes
+    }
 
-	return jsonic(output + '}')
+    if (char == "'" && input[pos - 1] != '\\' && !doubleQuotes) {
+      singleQuotes = !singleQuotes
+      char = '"'
+    }
+
+    output += char
+  })
+
+  return jsonic(output + '}')
 }

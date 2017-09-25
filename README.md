@@ -3,7 +3,7 @@
 
 Test and develop REST APIs&mdash;an interactive HTTP client.
 
-This is a small tool that allows you to conveniently make HTTP requests. You can only set the request method and message body at the moment but I'll add features as I need them. Feel free to create a pull request.
+This is a small tool that allows you to conveniently make HTTP requests. Feel free to make a feature request.
 
 ### Features
 
@@ -64,7 +64,7 @@ https://example.net/
 ```
 
 ##### Queries and request data
-httpcli provides a flexible way of passing data as the JSON request body as well as the query parameters.
+httpcli provides a flexible way of passing data for the JSON request body as well as query parameters, setting cookies and headers.
 
 ```bash
 # Setting query parameters
@@ -95,28 +95,47 @@ HEAD
 ##### Request options
 
 ```bash
--b, --body
-	Only print the response body.
-
--h, --header
-	Only print the response headers.
+-c [COOKIES]..., --cookie [COOKIES]...
+	Specify cookies for the Cookie header.
 
 -d [DATA]..., --data [DATA]...
 	Specify request body data to send as a JSON object.
 
+-h [HEADERS]..., --header [HEADERS]...
+	Specify headers to be set for the request
+
 -q [QUERY]..., --query [QUERY]...
 	Specify query parameters.
 
--D [DATA]..., --persistent-data [DATA]...
-	Specify request body data to send with every following request which
-	specifies the -d flag. Useful for sending session data.
+-C [COOKIES]..., --store-cookie [COOKIES]...
+	Specify cookies for the Cookie header to send with each following request.
 
--Q [QUERY]..., --persistent-query [QUERY]...
+-D [DATA]..., --store-data [DATA]...
+	Specify request body JSON data to send with every following request which
+	specifies the -d option.
+
+-H [HEADERS]..., --store-header [HEADERS]...
+	Specify headers to be set for every following request which specifies the
+	-h option.
+
+-Q [QUERY]..., --store-query [QUERY]...
 	Specify query parameters to send with every following request which
-	specifies the -q flag. Useful for sending session data.
+	specifies the -q option.
 
--r, --rm-persistent
-	Remove persistent data and queries sent with requests.
+--body-only
+	Only print the response body.
+
+--header-only
+	Only print the response headers.
+
+-p, --print-request
+	Print the request headers.
+
+-P, --always-print-request
+	Print the request headers for each following request.
+
+-r, --rm-stored
+	Remove stored data, headers and queries.
 ```
 
 ##### Examples
@@ -133,13 +152,24 @@ GET some/resource
 PUT some/resource --data name="value" array=[1, 2, 3] object={a=b, x=y}
 ```
 
-### To do
-Let me know if you would like to see any of these features implemented (or any you can think of).
+### Changelog
 
-  - [ ] Ability to set request headers
+#### 26 Sep 2017
+  - Now detects more JSON Content-Types
+  - Able to set request headers
+  - You can now set the Cookie header conveniently with `-c`
+  - Ability to print request headers
+  - Now remembers the last path/resource from the previous session
+
+### To do
+
+  - [x] Ability to set request headers
+  - [x] View request headers
+  - [ ] View entire request
   - [ ] Persistent data and queries between sessions
   - [ ] Persistent cookies between sessions
   - [ ] Persistent history
+  - [ ] Make requests with form body data
   - [x] An easier way to send JSON in the request message body. (-d flag)
   - [ ] Ability to read persistent data/queries and cookies
   - [ ] Ability to delete cookies
