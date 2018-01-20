@@ -1,5 +1,5 @@
 # httpcli
-![httpcli](https://raw.githubusercontent.com/jasonwoodland/httpcli/master/httpcli.png)
+![httpcli](https://raw.githubusercontent.com/jasonwoodland/httpcli/master/httpcli.gif)
 
 Test and develop REST APIs&mdash;an interactive HTTP client.
 
@@ -122,16 +122,16 @@ HEAD
 	Specify query parameters to send with every following request which
 	specifies the -q option.
 
---body-only
+-b, --body-only
 	Only print the response body.
 
---header-only
+-B, --no-body
 	Only print the response headers.
 
--p, --print-request
+-v, --verbose
 	Print the request headers.
 
--P, --always-print-request
+-V, --always-verbose
 	Print the request headers for each following request.
 
 -r, --rm-stored

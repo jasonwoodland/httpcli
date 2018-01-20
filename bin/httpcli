@@ -13,6 +13,8 @@ const sync = require('sync')
 const url = require('url')
 const util = require('util')
 
+setTerminalTitle('httpcli')
+
 // Init persistent data
 storage.initSync({
   dir: os.homedir() + '/.httpcli'
@@ -23,14 +25,14 @@ const useVi = true
 const defaultURI = 'http://localhost/'
 
 jsome.colors = {
-  num: 'cyan',
-  str: 'green',
+  num: 'white',
+  str: 'magenta',
   bool: 'cyan',
   regex: 'cyan',
   undef: 'grey',
   null: 'grey',
   attr: 'cyan',
-  quot: 'green',
+  quot: 'magenta',
   punc: 'white',
   brack: 'white'
 }
@@ -49,23 +51,12 @@ if (useVi) {
 
 const methods = [
   'GET',
-  'PUT',
+  'HEAD',
   'POST',
+  'PUT',
   'PATCH',
   'DELETE',
-  'HEAD'
-]
-
-const jsonContentTypes = [
-  'application/json',
-  'application/javascript',
-  'application/x-json',
-  'application/x-javascript',
-  'text/json',
-  'text/javascript',
-  'text/x-json',
-  'text/x-javascript',
-  'application/ld+json'
+  'OPTIONS',
 ]
 
 let uri = (() => {
@@ -74,9 +65,11 @@ let uri = (() => {
 
   if (argument) {
     return url.resolve(defaultURI, argument || '')
-  } else if (storedURI) {
+  }
+  else if (storedURI) {
     return storedURI
-  } else {
+  }
+  else {
     return defaultURI
   }
 })()
@@ -138,7 +131,6 @@ rl.on('line', (input) => {
         pieces.push(args[subIndex])
       }
       const value = pieces.join(' ')
-
       const combinedObject = {}
 
       switch (arg) {
@@ -158,11 +150,9 @@ rl.on('line', (input) => {
         case '-c':
         case '-cookie':
           requestCookies = jason(value)
-
           if (setPersistentCookies) {
             persistentCookies = requestCookies
           }
-
           break
 
         case '--store-data':
@@ -174,11 +164,9 @@ rl.on('line', (input) => {
           const inputData = jason(value)
           Object.assign(combinedObject, persistentData, inputData)
           data = JSON.stringify(combinedObject)
-
           if (setPersistentData) {
             persistentData = combinedObject
           }
-
           break
 
         case '--store-query':
@@ -190,11 +178,9 @@ rl.on('line', (input) => {
           const inputQuery = jason(value)
           Object.assign(combinedObject, persistentQuery, inputQuery)
           query = '?' + qs.stringify(combinedObject)
-
           if (setPersistentQuery) {
             persistentQuery = combinedObject
           }
-
           break
 
         case '--store-header':
@@ -205,27 +191,27 @@ rl.on('line', (input) => {
         case '-h':
           const inputHeaders = jason(value)
           Object.assign(headers, persistentHeaders, inputHeaders)
-
           if (setPersistentHeaders) {
             persistentHeaders = headers
           }
-
           break
 
         case '--body-only':
+        case '-b':
           bodyOnly = true
           break
 
-        case '--header-only':
+        case '--no-body':
+        case '-B':
           headerOnly = true
           break
 
-        case '--always-print-request':
-        case '-P':
+        case '--always-verbose':
+        case '-V':
           alwaysPrintRequest = true
 
-        case '--print-request':
-        case '-p':
+        case '--verbose':
+        case '-v':
           printRequest = true
           break
       }
@@ -260,14 +246,15 @@ rl.on('line', (input) => {
       if (requestHeaders.Cookie) {
         requestHeaders.Cookie += '; '
         requestHeaders.Cookie += requestCookieString
-      } else {
+      }
+      else {
         requestHeaders.Cookie = requestCookieString
       }
     }
 
     if (printRequest) {
       console.log(
-        chalk.cyan(requestMethod) + ' ' + chalk.green(requestURI + query)
+        chalk.cyan(requestMethod) + ' ' + chalk.white(requestURI + query)
       )
 
       const longest = Object.keys(requestHeaders).sort((a, b) => { return b.length - a.length })[0].length
@@ -287,7 +274,7 @@ rl.on('line', (input) => {
           chalk.cyan(prettyName) +
           chalk.white(': ') +
           ' '.repeat(longest - prettyName.length) + // Align values
-          chalk.green(requestHeaders[field])
+          chalk.white(requestHeaders[field])
         )
       }
 
@@ -344,7 +331,7 @@ rl.on('line', (input) => {
             chalk.cyan(prettyName) +
             chalk.white(': ') +
             ' '.repeat(longest - prettyName.length) + // Align values
-            chalk.green(headers[field])
+            chalk.white(headers[field])
           )
         }
 
@@ -353,16 +340,12 @@ rl.on('line', (input) => {
 
       // Output response body
       if ((bodyOnly || !headerOnly) && response.body) {
-
-        // Format as JSON if the response Content-Type is application/jason
         const body = response.body.replace(/^\s+|\s+$/g, '')
 
-        if (headers['content-type']
-                && jsonContentTypes
-                   .includes(headers['content-type']
-                             .split(';')[0])) {
+        try {
+          JSON.parse(body)
           formatJSON(body)
-        } else {
+        } catch(e) {
           console.log(body)
         }
 
@@ -412,10 +395,12 @@ function completer(line) {
   if (arg == line) {
     if (!line) {
       completions = methods
-    } else {
+    }
+    else {
       completions = methods.concat(methods.join('|').toLowerCase().split('|'))
     }
-  } else {
+  }
+  else {
     completions = [
       '--cookie', '-c',
       '--data', '-d',
@@ -444,6 +429,12 @@ function completer(line) {
   }
 
   return [hits, arg]
+}
+
+function setTerminalTitle(title) {
+  process.stdout.write(
+    String.fromCharCode(27) + "]0;" + title + String.fromCharCode(7)
+  );
 }
 
 /*
