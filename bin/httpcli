@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const chalk = require('chalk')
+const colors = require('colors')
 const jsome = require('jsome')
 const jsonic = require('jsonic')
 const os = require('os')
@@ -56,7 +56,7 @@ const methods = [
   'PUT',
   'PATCH',
   'DELETE',
-  'OPTIONS',
+  'OPTIONS'
 ]
 
 let uri = (() => {
@@ -254,7 +254,7 @@ rl.on('line', (input) => {
 
     if (printRequest) {
       console.log(
-        chalk.cyan(requestMethod) + ' ' + chalk.white(requestURI + query)
+        colors.cyan(requestMethod) + ' ' + colors.white(requestURI + query)
       )
 
       const longest = Object.keys(requestHeaders).sort((a, b) => { return b.length - a.length })[0].length
@@ -271,10 +271,10 @@ rl.on('line', (input) => {
         const prettyName = newWords.join('-')
 
         console.log(
-          chalk.cyan(prettyName) +
-          chalk.white(': ') +
+          colors.cyan(prettyName) +
+          colors.white(': ') +
           ' '.repeat(longest - prettyName.length) + // Align values
-          chalk.white(requestHeaders[field])
+          requestHeaders[field]
         )
       }
 
@@ -308,11 +308,11 @@ rl.on('line', (input) => {
         // Output status line
         const success = String(response.response.statusCode)[0] == '2'
 
-        console.log(chalk.cyan('HTTP')
-                    + chalk.white('/')
-                    + chalk.cyan(response.response.httpVersion)
+        console.log(colors.cyan('HTTP')
+                    + '/'
+                    + colors.cyan(response.response.httpVersion)
                     + ' '
-                    + (success ? chalk.green : chalk.red)(
+                    + (success ? colors.green : colors.red)(
                         response.response.statusCode + ' ' +
                         response.response.statusMessage))
 
@@ -328,10 +328,10 @@ rl.on('line', (input) => {
           const prettyName = newWords.join('-')
 
           console.log(
-            chalk.cyan(prettyName) +
-            chalk.white(': ') +
+            colors.cyan(prettyName) +
+            ': ' +
             ' '.repeat(longest - prettyName.length) + // Align values
-            chalk.white(headers[field])
+            headers[field]
           )
         }
 
@@ -371,7 +371,7 @@ rl.on('SIGINT', () => {
  */
 function setPrompt() {
   rl.setPrompt(
-    chalk.white(uri) + ' '
+    colors.white(uri) + ' '
   )
 
   rl.prompt()
